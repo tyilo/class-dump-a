@@ -113,7 +113,7 @@ then
 	done
 	
 	echo "$imports" | awk '{
-		if(FNR == NR)
+		if(FILENAME == "-")
 		{
 			if(i != "")
 			{
