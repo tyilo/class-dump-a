@@ -20,21 +20,29 @@ if [[ ! -f "$1" ]]
 then
 	echo "$0: $1: No such file"
 	usage
-	exit 2
+	exit 1
 fi
 
 if [[ -a "$2" && ! -d "$2" ]]
 then
 	echo "$0: $2: Not a directory"
 	usage
-	exit 3
+	exit 1
 fi
 
-h1="$TMPDIR/class-dump-h1"
-h2="$TMPDIR/class-dump-h2"
+cdz="$(command -v class-dump-z)"
+cd="$(command -v class-dump)"
 
-rm -rf "$h1"
-rm -rf "$h2"
+if [[ "$cdz" == "" || "$cd" == "" ]]
+then
+	[[ "$cdz" == "" ]] && echo "class-dump-z not found."
+	[[ "$cd" == "" ]] && echo "class-dump not found."
+	echo "This program requires both 'class-dump-z' and 'class-dump' to function."
+	exit 1
+fi
+
+h1="$(mktemp -d -t "class-dump-a")"
+h2="$(mktemp -d -t "class-dump-a")"
 
 echo "Dumping headers using class-dump-z..."
 class-dump-z -H -o "$h1" "$1"
@@ -128,9 +136,5 @@ then
 	mv -f "$h1/$name.h.tmp" "$h1/$name.h"
 fi
 
-if [[ -a "$2" ]]
-then
-	rm -rf "$2"
-fi
-
-mv -f "$h1" "$2"
+shopt -s dotglob
+mv -f -- "$h1"/* "$2"
