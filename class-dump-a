@@ -136,5 +136,9 @@ then
 	mv -f "$h1/$name.h.tmp" "$h1/$name.h"
 fi
 
-shopt -s dotglob
+if [[ ! -a "$2" ]]
+then
+	mkdir "$2"
+fi
+
 mv -f -- "$h1"/* "$2"
