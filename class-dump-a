@@ -1,0 +1,136 @@
+#!/bin/bash
+
+# class-dump  	class-dump-z
+# -			main.h
+# CDStructures.h	main-Structs.h
+# xxx-Protocol.h	xxx.h
+
+usage ()
+{
+	echo "Usage: $0 executable target_directory"
+}
+
+if [[ "$#" != "2" ]]
+then
+	usage
+	exit 1
+fi
+
+if [[ ! -f "$1" ]]
+then
+	echo "$0: $1: No such file"
+	usage
+	exit 2
+fi
+
+if [[ -a "$2" && ! -d "$2" ]]
+then
+	echo "$0: $2: Not a directory"
+	usage
+	exit 3
+fi
+
+h1="$TMPDIR/class-dump-h1"
+h2="$TMPDIR/class-dump-h2"
+
+rm -rf "$h1"
+rm -rf "$h2"
+
+echo "Dumping headers using class-dump-z..."
+class-dump-z -H -o "$h1" "$1"
+
+if grep 'XXUnknownSuperclass' "$h1"/* &> /dev/null
+then
+	echo "Dumping headers using class-dump..."
+	class-dump -H -o "$h2" "$1"
+
+	name="$(basename "$1")"
+	
+	if [[ -f "$h1/XXUnknownSuperclass.h" ]]
+	then
+		rm "$h1/XXUnknownSuperclass.h"
+	fi
+	
+	imports=""
+	
+	for f in $(cd "$h2"; echo *)
+	do
+		other="$f"
+		case "$f" in
+			CDStructures.h)
+				other="$name-Structs.h"
+			;;
+			*-Protocol.h)
+				other="${f/%-Protocol.h/.h}"
+			;;
+		esac
+		otherfull="$h1/$other"
+		if [[ ! -f "$otherfull" ]]
+		then
+			cp "$h2/$f" "$otherfull"
+			imports+="#import \"$f\""$'\n'
+		else
+			awk -v f="$h2/$f" '/XXUnknownSuperclass/ {
+				for(i = 1; i <= NF; i++)
+				{
+					if(match($i, "XXUnknownSuperclass") > 0)
+					{
+						while(getline line < f)
+						{
+							split(line, fields, FS)
+							for(j = 1; j < i; j++)
+							{
+								if($j != fields[j])
+								{
+									break
+								}
+							}
+							if(i == j)
+							{
+								$i = fields[j]
+								sub(/ \/\/ Unknown library$/, "")
+								sub(/-Protocol.h"$/, ".h")
+								print
+	 							next
+							}
+						}
+					}
+				}
+			}
+			{
+				print $0
+			}' "$otherfull" > "$otherfull.tmp"
+			mv -f "$otherfull.tmp" "$otherfull"
+		fi
+	done
+	
+	echo "$imports" | awk '{
+		if(FNR == NR)
+		{
+			if(i != "")
+			{
+				i = i"\n"
+			}
+			i = i$0
+		}
+		else
+		{
+			if($0 == "#import \"XXUnknownSuperclass.h\"")
+			{
+				printf i
+			}
+			else
+			{
+				print
+			}
+		}
+	}' "$h1/$name.h" > "$h1/$name.h.tmp"
+	mv -f "$h1/$name.h.tmp" "$h1/$name.h"
+fi
+
+if [[ -a "$2" ]]
+then
+	rm -rf "$2"
+fi
+
+mv -f "$h1" "$2"
