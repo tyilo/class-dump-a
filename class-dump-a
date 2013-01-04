@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# class-dump  	class-dump-z
-# -			main.h
-# CDStructures.h	main-Structs.h
-# xxx-Protocol.h	xxx.h
+# class-dump            class-dump-z
+# -                     main.h
+# CDStructures.h        main-Structs.h
+# xxx-Protocol.h        xxx.h
 
 usage ()
 {
