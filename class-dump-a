@@ -132,7 +132,7 @@ then
 				print
 			}
 		}
-	}' "$h1/$name.h" > "$h1/$name.h.tmp"
+	}' - "$h1/$name.h" > "$h1/$name.h.tmp"
 	mv -f "$h1/$name.h.tmp" "$h1/$name.h"
 fi
 
